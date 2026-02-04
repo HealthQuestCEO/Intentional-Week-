@@ -1,0 +1,203 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from './useAuth';
+import { getWeekData, saveWeekData, createEmptyWeek } from '../services/storage';
+import { getWeekKey, getDateKey, getDayName } from '../utils/dateUtils';
+import { deepClone } from '../utils/helpers';
+
+export function useWeekData(weekDate = new Date()) {
+  const { user } = useAuth();
+  const [weekData, setWeekData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [weekKey, setWeekKey] = useState(getWeekKey(weekDate));
+
+  // Load week data
+  useEffect(() => {
+    if (!user) {
+      setWeekData(null);
+      setLoading(false);
+      return;
+    }
+
+    const key = getWeekKey(weekDate);
+    setWeekKey(key);
+
+    const data = getWeekData(user.uid, key);
+    setWeekData(data || createEmptyWeek());
+    setLoading(false);
+  }, [user, weekDate]);
+
+  // Save helper
+  const save = useCallback((data) => {
+    if (!user) return false;
+    const success = saveWeekData(user.uid, weekKey, data);
+    if (success) {
+      setWeekData(data);
+    }
+    return success;
+  }, [user, weekKey]);
+
+  // Update a specific rule's data
+  const updateRule = useCallback((ruleId, ruleData) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData[ruleId] = { ...newData[ruleId], ...ruleData };
+    return save(newData);
+  }, [weekData, save]);
+
+  // Bedtime helpers
+  const logBedtime = useCallback((day, hit, actual = null) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.bedtime.logs[day] = { hit, actual };
+    return save(newData);
+  }, [weekData, save]);
+
+  const setBedtimeTarget = useCallback((target) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.bedtime.target = target;
+    return save(newData);
+  }, [weekData, save]);
+
+  // Friday Plan helpers
+  const updateFridayPlan = useCallback((section, data) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    if (typeof data === 'object') {
+      newData.fridayPlan[section] = { ...newData.fridayPlan[section], ...data };
+    } else {
+      newData.fridayPlan[section] = data;
+    }
+    return save(newData);
+  }, [weekData, save]);
+
+  const markFridayPlanDone = useCallback((done = true) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.fridayPlan.done = done;
+    return save(newData);
+  }, [weekData, save]);
+
+  // Move by 3pm helpers
+  const logMovement = useCallback((day, moved, activity = null) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.moveBy3pm[day] = { moved, activity };
+    return save(newData);
+  }, [weekData, save]);
+
+  // Habit helpers
+  const addHabit = useCallback((habitName) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.habits.push({
+      id: Date.now().toString(),
+      name: habitName,
+      days: {}
+    });
+    return save(newData);
+  }, [weekData, save]);
+
+  const removeHabit = useCallback((habitId) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.habits = newData.habits.filter(h => h.id !== habitId);
+    return save(newData);
+  }, [weekData, save]);
+
+  const logHabitDay = useCallback((habitId, day, done) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    const habit = newData.habits.find(h => h.id === habitId);
+    if (habit) {
+      habit.days[day] = done;
+    }
+    return save(newData);
+  }, [weekData, save]);
+
+  // Task helpers (for Friday Plan career section)
+  const addTask = useCallback((task) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.fridayPlan.career.tasks.push({
+      id: Date.now().toString(),
+      name: task.name,
+      plannedMinutes: task.plannedMinutes || 0,
+      actualMinutes: 0,
+      status: 'not-started',
+      timerLogs: []
+    });
+    return save(newData);
+  }, [weekData, save]);
+
+  const updateTask = useCallback((taskId, updates) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    const taskIndex = newData.fridayPlan.career.tasks.findIndex(t => t.id === taskId);
+    if (taskIndex !== -1) {
+      newData.fridayPlan.career.tasks[taskIndex] = {
+        ...newData.fridayPlan.career.tasks[taskIndex],
+        ...updates
+      };
+    }
+    return save(newData);
+  }, [weekData, save]);
+
+  const removeTask = useCallback((taskId) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.fridayPlan.career.tasks = newData.fridayPlan.career.tasks.filter(t => t.id !== taskId);
+    return save(newData);
+  }, [weekData, save]);
+
+  // Timer log helper
+  const addTimerLog = useCallback((log) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.timerLogs.push({
+      ...log,
+      timestamp: new Date().toISOString()
+    });
+    return save(newData);
+  }, [weekData, save]);
+
+  // Check today's status for various rules
+  const getTodayStatus = useCallback(() => {
+    if (!weekData) return {};
+    const today = getDayName(new Date());
+
+    return {
+      movedToday: weekData.moveBy3pm[today]?.moved || false,
+      bedtimeLastNight: weekData.bedtime.logs[today]?.hit || false,
+      effortfulToday: weekData.effortfulFirst.days[today] || false
+    };
+  }, [weekData]);
+
+  return {
+    weekData,
+    weekKey,
+    loading,
+    save,
+    updateRule,
+    // Bedtime
+    logBedtime,
+    setBedtimeTarget,
+    // Friday Plan
+    updateFridayPlan,
+    markFridayPlanDone,
+    // Movement
+    logMovement,
+    // Habits
+    addHabit,
+    removeHabit,
+    logHabitDay,
+    // Tasks
+    addTask,
+    updateTask,
+    removeTask,
+    // Timer
+    addTimerLog,
+    // Status
+    getTodayStatus
+  };
+}
