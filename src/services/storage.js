@@ -79,8 +79,22 @@ export function getWeekData(userId, weekKey = null) {
  * Save week data
  */
 export function saveWeekData(userId, weekKey, weekData) {
-  const userData = getUserData(userId);
-  if (!userData) return false;
+  let userData = getUserData(userId);
+
+  // Auto-initialize if user data doesn't exist
+  if (!userData) {
+    userData = {
+      userId: userId,
+      profile: { createdAt: new Date().toISOString() },
+      settings: {
+        reminders: deepClone(DEFAULT_REMINDERS),
+        quietHours: { start: '22:00', end: '07:00' },
+        googleCalendarSync: false
+      },
+      weeks: {},
+      journal: {}
+    };
+  }
 
   userData.weeks[weekKey] = weekData;
   return saveUserData(userId, userData);
