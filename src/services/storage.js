@@ -2,12 +2,64 @@ import { getWeekKey, getDateKey } from '../utils/dateUtils';
 import { deepClone } from '../utils/helpers';
 import { DEFAULT_REMINDERS } from '../utils/constants';
 
-// For MVP, we'll use localStorage with the same data structure
-// This can be swapped for Netlify Blob later
+// Storage keys
 const STORAGE_KEY = 'intentional-week-data';
+const BLOB_API = '/api/blob';
+
+// ============================================
+// Netlify Blob API (Cloud Storage)
+// ============================================
 
 /**
- * Get user data from storage
+ * Fetch user data from Netlify Blob
+ */
+export async function fetchUserDataFromBlob(userId) {
+  try {
+    const response = await fetch(`${BLOB_API}?userId=${userId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch from blob');
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.warn('Blob fetch failed, using localStorage:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Save user data to Netlify Blob
+ */
+export async function saveUserDataToBlob(userId, data) {
+  try {
+    const response = await fetch(`${BLOB_API}?userId=${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save to blob');
+    }
+
+    return true;
+  } catch (error) {
+    console.warn('Blob save failed:', error.message);
+    return false;
+  }
+}
+
+// ============================================
+// Local Storage (Fallback & Cache)
+// ============================================
+
+/**
+ * Get user data from localStorage
  */
 export function getUserData(userId) {
   try {
@@ -20,13 +72,19 @@ export function getUserData(userId) {
 }
 
 /**
- * Save user data to storage
+ * Save user data to localStorage
  */
 export function saveUserData(userId, data) {
   try {
     const allData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     allData[userId] = data;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+
+    // Also save to blob in background (fire and forget)
+    saveUserDataToBlob(userId, data).catch(err =>
+      console.warn('Background blob save failed:', err)
+    );
+
     return true;
   } catch (error) {
     console.error('Error saving user data:', error);
@@ -35,14 +93,29 @@ export function saveUserData(userId, data) {
 }
 
 /**
- * Initialize user data structure
+ * Initialize user data - tries blob first, then localStorage
  */
-export function initializeUserData(user) {
-  const existingData = getUserData(user.uid);
+export async function initializeUserData(user) {
+  // Try to load from blob first
+  let existingData = await fetchUserDataFromBlob(user.uid);
+
+  // If blob has data, update localStorage and return
   if (existingData) {
+    const allData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    allData[user.uid] = existingData;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
     return existingData;
   }
 
+  // Check localStorage
+  existingData = getUserData(user.uid);
+  if (existingData) {
+    // Sync localStorage to blob
+    saveUserDataToBlob(user.uid, existingData);
+    return existingData;
+  }
+
+  // Create new user data
   const initialData = {
     userId: user.uid,
     profile: {
@@ -63,6 +136,24 @@ export function initializeUserData(user) {
   saveUserData(user.uid, initialData);
   return initialData;
 }
+
+/**
+ * Sync data from blob to localStorage (call on app load)
+ */
+export async function syncFromBlob(userId) {
+  const blobData = await fetchUserDataFromBlob(userId);
+  if (blobData) {
+    const allData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    allData[userId] = blobData;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+    return blobData;
+  }
+  return getUserData(userId);
+}
+
+// ============================================
+// Week Data
+// ============================================
 
 /**
  * Get week data
@@ -152,6 +243,10 @@ export function createEmptyWeek() {
   };
 }
 
+// ============================================
+// Journal
+// ============================================
+
 /**
  * Get journal entry for a specific date
  */
@@ -167,8 +262,20 @@ export function getJournalEntry(userId, dateKey = null) {
  * Save journal entry
  */
 export function saveJournalEntry(userId, dateKey, entry) {
-  const userData = getUserData(userId);
-  if (!userData) return false;
+  let userData = getUserData(userId);
+  if (!userData) {
+    userData = {
+      userId: userId,
+      profile: { createdAt: new Date().toISOString() },
+      settings: {
+        reminders: deepClone(DEFAULT_REMINDERS),
+        quietHours: { start: '22:00', end: '07:00' },
+        googleCalendarSync: false
+      },
+      weeks: {},
+      journal: {}
+    };
+  }
 
   userData.journal[dateKey] = {
     ...entry,
@@ -185,6 +292,10 @@ export function getAllJournalEntries(userId) {
   if (!userData) return {};
   return userData.journal || {};
 }
+
+// ============================================
+// Settings
+// ============================================
 
 /**
  * Update user settings
@@ -209,12 +320,28 @@ export function getSettings(userId) {
   return userData.settings;
 }
 
+// ============================================
+// Timer
+// ============================================
+
 /**
  * Add timer log entry
  */
 export function addTimerLog(userId, weekKey, log) {
-  const userData = getUserData(userId);
-  if (!userData) return false;
+  let userData = getUserData(userId);
+  if (!userData) {
+    userData = {
+      userId: userId,
+      profile: { createdAt: new Date().toISOString() },
+      settings: {
+        reminders: deepClone(DEFAULT_REMINDERS),
+        quietHours: { start: '22:00', end: '07:00' },
+        googleCalendarSync: false
+      },
+      weeks: {},
+      journal: {}
+    };
+  }
 
   if (!userData.weeks[weekKey]) {
     userData.weeks[weekKey] = createEmptyWeek();
