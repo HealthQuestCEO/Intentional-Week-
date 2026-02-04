@@ -1,7 +1,15 @@
 import { useAuth } from '../../hooks/useAuth';
-import { Calendar, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Calendar, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, BookOpen, Timer, Sparkles } from 'lucide-react';
+import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { getWeekRangeDisplay } from '../../utils/dateUtils';
+
+const navItems = [
+  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/journal', icon: BookOpen, label: 'Journal' },
+  { path: '/calendar', icon: Calendar, label: 'Calendar' },
+  { path: '/timer', icon: Timer, label: 'Timer' },
+  { path: '/extras', icon: Sparkles, label: 'Wellness' },
+];
 
 export function Header({
   currentDate = new Date(),
@@ -52,9 +60,29 @@ export function Header({
             </button>
           </div>
 
-          {/* Center: Week navigation (when on dashboard) */}
+          {/* Center: Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.map(({ path, icon: Icon, label }) => (
+              <NavLink
+                key={path}
+                to={path}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-balanced-teal/10 text-balanced-teal'
+                      : 'text-charcoal/60 hover:text-charcoal hover:bg-gray-100'
+                  }`
+                }
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+
+          {/* Week navigation (when on dashboard - mobile only) */}
           {showWeekNav && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 md:hidden">
               <button
                 onClick={onPrevWeek}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -62,7 +90,7 @@ export function Header({
               >
                 <ChevronLeft className="w-5 h-5 text-charcoal" />
               </button>
-              <span className="text-sm font-medium text-charcoal min-w-[140px] text-center">
+              <span className="text-sm font-medium text-charcoal min-w-[100px] text-center">
                 {getWeekRangeDisplay(currentDate)}
               </span>
               <button
