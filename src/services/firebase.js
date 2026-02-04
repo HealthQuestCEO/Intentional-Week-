@@ -8,13 +8,13 @@ import {
 } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyBZtGr_-TZgd1n9_GLPohjO4NQssvN8Qv0",
+  authDomain: "intentional-week.firebaseapp.com",
+  projectId: "intentional-week",
+  storageBucket: "intentional-week.firebasestorage.app",
+  messagingSenderId: "355139852191",
+  appId: "1:355139852191:web:2264b94492426cb4468faa",
+  measurementId: "G-5L9N6PEQ5J"
 };
 
 // Initialize Firebase
