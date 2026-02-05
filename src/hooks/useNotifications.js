@@ -2,14 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   isNotificationSupported,
   getNotificationPermission,
-  requestNotificationPermission,
+  requestNotificationPermission as requestBrowserPermission,
   showNotification,
   scheduleReminder,
   cancelReminder
 } from '../services/notifications';
+import {
+  requestNotificationPermission as requestFCMPermission,
+  onForegroundMessage,
+  showNotification as showFCMNotification
+} from '../services/firebase';
 
 export function useNotifications() {
   const [permission, setPermission] = useState(getNotificationPermission());
+  const [fcmToken, setFcmToken] = useState(null);
   const [scheduledReminders, setScheduledReminders] = useState([]);
 
   useEffect(() => {
@@ -17,9 +23,39 @@ export function useNotifications() {
     setPermission(getNotificationPermission());
   }, []);
 
+  // Listen for foreground messages
+  useEffect(() => {
+    if (permission !== 'granted') return;
+
+    const unsubscribe = onForegroundMessage((payload) => {
+      // Show notification when app is in foreground
+      showFCMNotification(
+        payload.notification?.title || 'Intentional Week',
+        {
+          body: payload.notification?.body,
+          data: payload.data
+        }
+      );
+    });
+
+    return unsubscribe;
+  }, [permission]);
+
   const requestPermission = useCallback(async () => {
-    const result = await requestNotificationPermission();
+    // Request browser permission first
+    const result = await requestBrowserPermission();
     setPermission(result.permission);
+
+    // If granted, also get FCM token
+    if (result.permission === 'granted') {
+      const fcmResult = await requestFCMPermission();
+      if (fcmResult.token) {
+        setFcmToken(fcmResult.token);
+        // Store token in localStorage for later use
+        localStorage.setItem('intentional-week-fcm-token', fcmResult.token);
+      }
+    }
+
     return result;
   }, []);
 
@@ -54,6 +90,7 @@ export function useNotifications() {
     isSupported: isNotificationSupported(),
     permission,
     isGranted: permission === 'granted',
+    fcmToken,
     requestPermission,
     notify,
     schedule,
