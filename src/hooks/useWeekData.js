@@ -162,10 +162,15 @@ export function useWeekData(weekDate = new Date()) {
     return save(newData);
   }, [weekData, save]);
 
-  const removeTimerLog = useCallback((logId) => {
+  const removeTimerLog = useCallback((logId, index) => {
     if (!weekData) return false;
     const newData = deepClone(weekData);
-    newData.timerLogs = newData.timerLogs.filter(log => log.id !== logId);
+    // If log has id, filter by id. Otherwise use index
+    if (logId) {
+      newData.timerLogs = newData.timerLogs.filter(log => log.id !== logId);
+    } else if (index !== undefined) {
+      newData.timerLogs.splice(index, 1);
+    }
     return save(newData);
   }, [weekData, save]);
 

@@ -78,29 +78,33 @@ export function TimerPage() {
           <div className="bg-white rounded-xl p-4 mt-4">
             <h3 className="font-medium text-charcoal mb-3">Recent sessions</h3>
             <div className="space-y-2">
-              {timerLogs.slice(-5).reverse().map((log, i) => (
-                <div
-                  key={log.id || i}
-                  className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0 group"
-                >
-                  <div>
-                    <p className="text-sm text-charcoal">{log.activity}</p>
-                    <p className="text-xs text-charcoal/50">{log.date}</p>
+              {timerLogs.slice(-5).reverse().map((log, i) => {
+                // Calculate actual index in the original array
+                const actualIndex = timerLogs.length - 1 - i;
+                return (
+                  <div
+                    key={log.id || log.timestamp || i}
+                    className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0 group"
+                  >
+                    <div>
+                      <p className="text-sm text-charcoal">{log.activity}</p>
+                      <p className="text-xs text-charcoal/50">{log.date}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-balanced-teal">
+                        {formatMinutes(log.minutes)}
+                      </span>
+                      <button
+                        onClick={() => removeTimerLog(log.id, actualIndex)}
+                        className="text-charcoal/30 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-balanced-teal">
-                      {formatMinutes(log.minutes)}
-                    </span>
-                    <button
-                      onClick={() => removeTimerLog(log.id)}
-                      className="text-charcoal/30 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

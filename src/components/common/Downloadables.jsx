@@ -1,4 +1,4 @@
-import { FileText, Download, ExternalLink } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 
 export function Downloadables() {
   const downloads = [
@@ -14,7 +14,6 @@ export function Downloadables() {
     const link = document.createElement('a');
     link.href = file;
     link.download = name.replace(/\s+/g, '-').toLowerCase() + '.pdf';
-    link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -41,22 +40,13 @@ export function Downloadables() {
                 <p className="text-xs text-charcoal/60">{item.description}</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => window.open(item.file, '_blank')}
-                className="p-2 text-charcoal/50 hover:text-balanced-teal transition-colors"
-                title="Open in new tab"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleDownload(item.file, item.name)}
-                className="p-2 text-charcoal/50 hover:text-balanced-teal transition-colors"
-                title="Download"
-              >
-                <Download className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => handleDownload(item.file, item.name)}
+              className="p-2 text-balanced-teal hover:bg-balanced-teal/10 rounded-lg transition-colors"
+              title="Download"
+            >
+              <Download className="w-5 h-5" />
+            </button>
           </div>
         ))}
       </div>
