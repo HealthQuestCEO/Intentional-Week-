@@ -1,6 +1,5 @@
 import { Header } from './Header';
 import { BottomNav } from './BottomNav';
-import { TimerWidget } from '../timer/TimerWidget';
 
 export function Layout({
   children,
@@ -21,8 +20,6 @@ export function Layout({
         {children}
       </main>
       <BottomNav />
-      {/* Floating Timer Widget - persists across all pages */}
-      <TimerWidget />
     </div>
   );
 }
