@@ -7,6 +7,7 @@ import { useNotifications } from '../../hooks/useNotifications';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { ReminderSettings } from './ReminderSettings';
+import { Downloadables } from '../common/Downloadables';
 
 export function Settings() {
   const { user, logout } = useAuth();
@@ -211,6 +212,9 @@ export function Settings() {
                 <p className="text-sm text-charcoal/60">Version 0.1.0</p>
               </div>
             </Card>
+
+            {/* Downloadables */}
+            <Downloadables />
 
             <Card>
               <p className="text-sm text-charcoal/70 leading-relaxed">
