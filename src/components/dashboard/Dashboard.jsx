@@ -10,7 +10,6 @@ import { AdventuresCard } from '../rules/AdventuresCard';
 import { NightForYouCard } from '../rules/NightForYouCard';
 import { BatchTasksCard } from '../rules/BatchTasksCard';
 import { EffortfulFirstCard } from '../rules/EffortfulFirstCard';
-import { TimerWidget } from '../timer/TimerWidget';
 import { InstallPrompt } from '../common/InstallPrompt';
 import { useWeekData } from '../../hooks/useWeekData';
 import { RULES } from '../../utils/constants';
@@ -143,9 +142,6 @@ export function Dashboard() {
             );
           })}
         </div>
-
-        {/* Floating Timer Widget */}
-        <TimerWidget />
       </div>
     </Layout>
   );

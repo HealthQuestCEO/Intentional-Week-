@@ -147,11 +147,11 @@ export function MeditationTimer() {
         <div className="w-full max-w-md mb-4 rounded-xl overflow-hidden">
           <iframe
             width="100%"
-            height="166"
+            height="300"
             scrolling="no"
             frameBorder="no"
             allow="autoplay"
-            src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/10492903&color=%23B8B4C8&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"
+            src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%3Aplaylists%3A10492903&color=%23B8B4C8&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=true&visual=true"
             title="Meditation Music"
           />
         </div>
