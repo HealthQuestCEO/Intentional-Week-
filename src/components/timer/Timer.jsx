@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Play, Pause, RotateCcw, Coffee, Clock } from 'lucide-react';
-import { useTimer } from '../../hooks/useTimer';
+import { Play, Pause, RotateCcw, Coffee, Clock, Check, X } from 'lucide-react';
+import { useGlobalTimer } from '../../context/TimerContext';
 import { useWeekData } from '../../hooks/useWeekData';
 import { useAuth } from '../../hooks/useAuth';
 import { formatTimerDisplay } from '../../utils/dateUtils';
@@ -11,18 +11,7 @@ export function Timer({ expanded = false }) {
   const { weekData, addTimerLog } = useWeekData();
   const [selectedTask, setSelectedTask] = useState('');
   const [customTag, setCustomTag] = useState('');
-
-  const handleTimerComplete = (data) => {
-    if (data.minutes > 0 && user) {
-      addTimerLog({
-        activity: selectedTask || customTag || 'Untitled',
-        minutes: data.minutes,
-        date: new Date().toISOString().split('T')[0],
-        mode: data.mode,
-        tag: selectedTask || customTag
-      });
-    }
-  };
+  const [adjustedMinutes, setAdjustedMinutes] = useState(0);
 
   const {
     seconds,
@@ -31,13 +20,17 @@ export function Timer({ expanded = false }) {
     pomodoroState,
     remainingSeconds,
     progress,
+    showAdjustModal,
+    stoppedTime,
     start,
     pause,
     stop,
     reset,
+    confirmTime,
+    cancelAdjust,
     setSimpleMode,
     setPomodoroMode,
-  } = useTimer(handleTimerComplete);
+  } = useGlobalTimer();
 
   const tasks = weekData?.fridayPlan?.career?.tasks || [];
 
@@ -47,15 +40,26 @@ export function Timer({ expanded = false }) {
 
   const handleStop = () => {
     const result = stop();
-    if (result.minutes > 0 && user) {
+    // Set initial adjusted minutes from stopped time
+    setAdjustedMinutes(Math.round(result.seconds / 60));
+  };
+
+  const handleConfirmTime = () => {
+    const result = confirmTime(adjustedMinutes);
+    if (adjustedMinutes > 0 && user) {
       addTimerLog({
         activity: selectedTask || customTag || 'Untitled',
-        minutes: result.minutes,
+        minutes: adjustedMinutes,
         date: new Date().toISOString().split('T')[0],
         mode: result.mode,
         tag: selectedTask || customTag
       });
     }
+  };
+
+  const handleCancelAdjust = () => {
+    cancelAdjust();
+    setAdjustedMinutes(0);
   };
 
   return (
@@ -194,6 +198,67 @@ export function Timer({ expanded = false }) {
               }}
               className="w-full text-sm p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-balanced-teal"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Time Adjustment Modal */}
+      {showAdjustModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-expand">
+            <h3 className="text-lg font-bold text-charcoal mb-2">
+              Adjust Time
+            </h3>
+            <p className="text-charcoal/60 text-sm mb-4">
+              Recorded: {Math.round(stoppedTime / 60)} minutes. Adjust if needed.
+            </p>
+
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <button
+                onClick={() => setAdjustedMinutes(Math.max(0, adjustedMinutes - 5))}
+                className="w-10 h-10 rounded-full bg-gray-100 text-charcoal flex items-center justify-center hover:bg-gray-200"
+              >
+                -5
+              </button>
+              <button
+                onClick={() => setAdjustedMinutes(Math.max(0, adjustedMinutes - 1))}
+                className="w-10 h-10 rounded-full bg-gray-100 text-charcoal flex items-center justify-center hover:bg-gray-200"
+              >
+                -1
+              </button>
+              <div className="text-3xl font-bold text-charcoal min-w-[80px] text-center">
+                {adjustedMinutes}
+                <span className="text-sm font-normal text-charcoal/60 ml-1">min</span>
+              </div>
+              <button
+                onClick={() => setAdjustedMinutes(adjustedMinutes + 1)}
+                className="w-10 h-10 rounded-full bg-gray-100 text-charcoal flex items-center justify-center hover:bg-gray-200"
+              >
+                +1
+              </button>
+              <button
+                onClick={() => setAdjustedMinutes(adjustedMinutes + 5)}
+                className="w-10 h-10 rounded-full bg-gray-100 text-charcoal flex items-center justify-center hover:bg-gray-200"
+              >
+                +5
+              </button>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleConfirmTime}
+                className="flex-1 flex items-center justify-center gap-2 bg-balanced-teal text-white px-4 py-3 rounded-xl font-medium hover:bg-balanced-teal/90 transition-colors"
+              >
+                <Check className="w-5 h-5" />
+                Log Time
+              </button>
+              <button
+                onClick={handleCancelAdjust}
+                className="px-4 py-3 text-charcoal/60 hover:text-charcoal font-medium"
+              >
+                Discard
+              </button>
+            </div>
           </div>
         </div>
       )}
