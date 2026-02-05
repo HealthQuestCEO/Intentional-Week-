@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Pause, RotateCcw, Coffee, Clock, Check, X } from 'lucide-react';
+import { Play, Pause, RotateCcw, Square, Coffee, Clock, Check } from 'lucide-react';
 import { useGlobalTimer } from '../../context/TimerContext';
 import { useWeekData } from '../../hooks/useWeekData';
 import { useAuth } from '../../hooks/useAuth';
@@ -151,10 +151,25 @@ export function Timer({ expanded = false }) {
           onClick={handleStop}
           disabled={seconds === 0}
           className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Finish & Log Time"
         >
-          <RotateCcw className="w-6 h-6" />
+          <Square className="w-5 h-5 fill-current" />
+        </button>
+        <button
+          onClick={reset}
+          className="w-14 h-14 rounded-full bg-gray-100 text-charcoal/60 flex items-center justify-center hover:bg-gray-200 transition-colors"
+          title="Reset"
+        >
+          <RotateCcw className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Finish button label */}
+      {seconds > 0 && !isRunning && (
+        <p className="text-center text-sm text-charcoal/60">
+          Press the red button to finish and log your time
+        </p>
+      )}
 
       {/* Tag selection (expanded view) */}
       {expanded && (
