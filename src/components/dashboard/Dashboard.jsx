@@ -11,6 +11,7 @@ import { NightForYouCard } from '../rules/NightForYouCard';
 import { BatchTasksCard } from '../rules/BatchTasksCard';
 import { EffortfulFirstCard } from '../rules/EffortfulFirstCard';
 import { TimerWidget } from '../timer/TimerWidget';
+import { InstallPrompt } from '../common/InstallPrompt';
 import { useWeekData } from '../../hooks/useWeekData';
 import { RULES } from '../../utils/constants';
 import { previousWeek, nextWeek, checkIsToday } from '../../utils/dateUtils';
@@ -123,6 +124,9 @@ export function Dashboard() {
       onNextWeek={handleNextWeek}
     >
       <div className="max-w-5xl mx-auto px-4 py-6">
+        {/* Install App Banner */}
+        <InstallPrompt />
+
         {/* Rule Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {RULES.map((rule) => {
