@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Play, Pause, RotateCcw, Video, VideoOff } from 'lucide-react';
 import { formatTimerDisplay } from '../../utils/dateUtils';
 import { TIMER_PRESETS } from '../../utils/constants';
 
@@ -8,8 +8,19 @@ export function MeditationTimer() {
   const [seconds, setSeconds] = useState(duration * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [showVideo, setShowVideo] = useState(true);
+  const [videoAvailable, setVideoAvailable] = useState(false);
   const intervalRef = useRef(null);
-  const audioRef = useRef(null);
+  const videoRef = useRef(null);
+
+  // Check if video file exists
+  useEffect(() => {
+    fetch('/videos/meditation-loop.mp4', { method: 'HEAD' })
+      .then((res) => {
+        if (res.ok) setVideoAvailable(true);
+      })
+      .catch(() => setVideoAvailable(false));
+  }, []);
 
   useEffect(() => {
     setSeconds(duration * 60);
@@ -23,7 +34,6 @@ export function MeditationTimer() {
           if (prev <= 1) {
             setIsRunning(false);
             setIsComplete(true);
-            // Play completion sound
             playChime();
             return 0;
           }
@@ -41,8 +51,26 @@ export function MeditationTimer() {
     };
   }, [isRunning, seconds]);
 
+  // Control video playback based on timer state
+  useEffect(() => {
+    if (videoRef.current && videoAvailable) {
+      if (isRunning) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isRunning, videoAvailable]);
+
+  // Reset video when complete
+  useEffect(() => {
+    if (isComplete && videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  }, [isComplete]);
+
   const playChime = () => {
-    // Create a simple chime sound using Web Audio API
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -51,7 +79,7 @@ export function MeditationTimer() {
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
 
-      oscillator.frequency.value = 528; // Hz - "miracle tone"
+      oscillator.frequency.value = 528;
       oscillator.type = 'sine';
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
@@ -67,12 +95,59 @@ export function MeditationTimer() {
     setIsRunning(false);
     setSeconds(duration * 60);
     setIsComplete(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  const handleStart = () => {
+    setIsRunning(!isRunning);
   };
 
   const progress = ((duration * 60 - seconds) / (duration * 60)) * 100;
 
   return (
     <div className="flex flex-col items-center">
+      {/* Video background (fullscreen-ish when playing) */}
+      {videoAvailable && showVideo && (
+        <div
+          className={`
+            transition-all duration-500 overflow-hidden rounded-2xl mb-4
+            ${isRunning ? 'w-full max-w-md aspect-video' : 'w-32 h-20'}
+          `}
+        >
+          <video
+            ref={videoRef}
+            src="/videos/meditation-loop.mp4"
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      {/* Video toggle */}
+      {videoAvailable && (
+        <button
+          onClick={() => setShowVideo(!showVideo)}
+          className="flex items-center gap-2 text-sm text-charcoal/60 hover:text-charcoal mb-4"
+        >
+          {showVideo ? (
+            <>
+              <VideoOff className="w-4 h-4" />
+              Hide video
+            </>
+          ) : (
+            <>
+              <Video className="w-4 h-4" />
+              Show video
+            </>
+          )}
+        </button>
+      )}
+
       {/* Duration selector */}
       <div className="flex gap-2 mb-6">
         {TIMER_PRESETS.meditation.map((mins) => (
@@ -134,7 +209,7 @@ export function MeditationTimer() {
       {/* Controls */}
       <div className="flex gap-3">
         <button
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={handleStart}
           disabled={isComplete}
           className={`
             w-14 h-14 rounded-full flex items-center justify-center transition-colors
@@ -157,7 +232,9 @@ export function MeditationTimer() {
 
       {/* Tip */}
       <p className="mt-6 text-sm text-charcoal/50 text-center max-w-xs">
-        Find a comfortable position, close your eyes, and focus on your breath.
+        {videoAvailable
+          ? 'Focus on the video and your breath. Let thoughts come and go.'
+          : 'Find a comfortable position, close your eyes, and focus on your breath.'}
       </p>
     </div>
   );
