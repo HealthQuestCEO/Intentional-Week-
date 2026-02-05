@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Video, VideoOff } from 'lucide-react';
+import { Play, Pause, RotateCcw, Video, VideoOff, Volume2, VolumeX } from 'lucide-react';
 import { formatTimerDisplay } from '../../utils/dateUtils';
 import { TIMER_PRESETS } from '../../utils/constants';
 
@@ -9,6 +9,7 @@ export function MeditationTimer() {
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [showVideo, setShowVideo] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [videoAvailable, setVideoAvailable] = useState(false);
   const intervalRef = useRef(null);
   const videoRef = useRef(null);
@@ -121,31 +122,49 @@ export function MeditationTimer() {
             ref={videoRef}
             src="/videos/meditation-loop.mp4"
             loop
-            muted
+            muted={isMuted}
             playsInline
             className="w-full h-full object-cover"
           />
         </div>
       )}
 
-      {/* Video toggle */}
+      {/* Video & audio controls */}
       {videoAvailable && (
-        <button
-          onClick={() => setShowVideo(!showVideo)}
-          className="flex items-center gap-2 text-sm text-charcoal/60 hover:text-charcoal mb-4"
-        >
-          {showVideo ? (
-            <>
-              <VideoOff className="w-4 h-4" />
-              Hide video
-            </>
-          ) : (
-            <>
-              <Video className="w-4 h-4" />
-              Show video
-            </>
-          )}
-        </button>
+        <div className="flex gap-4 mb-4">
+          <button
+            onClick={() => setShowVideo(!showVideo)}
+            className="flex items-center gap-2 text-sm text-charcoal/60 hover:text-charcoal"
+          >
+            {showVideo ? (
+              <>
+                <VideoOff className="w-4 h-4" />
+                Hide video
+              </>
+            ) : (
+              <>
+                <Video className="w-4 h-4" />
+                Show video
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className="flex items-center gap-2 text-sm text-charcoal/60 hover:text-charcoal"
+          >
+            {isMuted ? (
+              <>
+                <VolumeX className="w-4 h-4" />
+                Unmute
+              </>
+            ) : (
+              <>
+                <Volume2 className="w-4 h-4" />
+                Mute
+              </>
+            )}
+          </button>
+        </div>
       )}
 
       {/* Duration selector */}
