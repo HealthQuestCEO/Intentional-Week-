@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Calendar, Timer, Sparkles } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Calendar, Timer, Sparkles, CalendarDays } from 'lucide-react';
 
 const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/', icon: LayoutDashboard, label: 'Home' },
+  { path: '/planner', icon: CalendarDays, label: 'Planner' },
   { path: '/journal', icon: BookOpen, label: 'Journal' },
-  { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/timer', icon: Timer, label: 'Timer' },
   { path: '/extras', icon: Sparkles, label: 'Wellness' },
 ];

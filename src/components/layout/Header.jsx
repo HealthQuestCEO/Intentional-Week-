@@ -1,10 +1,11 @@
 import { useAuth } from '../../hooks/useAuth';
-import { Calendar, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, BookOpen, Timer, Sparkles } from 'lucide-react';
+import { Calendar, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, BookOpen, Timer, Sparkles, CalendarDays } from 'lucide-react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { getWeekRangeDisplay } from '../../utils/dateUtils';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/planner', icon: CalendarDays, label: 'Planner' },
   { path: '/journal', icon: BookOpen, label: 'Journal' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/timer', icon: Timer, label: 'Timer' },
@@ -32,6 +33,8 @@ export function Header({
         return 'Journal';
       case '/calendar':
         return 'Calendar';
+      case '/planner':
+        return 'Weekly Planner';
       case '/settings':
         return 'Settings';
       case '/extras':
