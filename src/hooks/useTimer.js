@@ -15,92 +15,76 @@ export function useTimer(onComplete = null) {
 
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
+  const onCompleteRef = useRef(onComplete);
 
-  // Clear interval on unmount
+  // Keep onComplete ref updated
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
-  // Timer tick effect
+  // Simple timer tick - minimal dependencies
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
-        setSeconds(prev => {
-          const newSeconds = prev + 1;
-
-          // Check if target reached (countdown mode)
-          if (targetSeconds && newSeconds >= targetSeconds) {
-            setIsRunning(false);
-            clearInterval(intervalRef.current);
-
-            // Handle pomodoro completion
-            if (mode === 'pomodoro') {
-              handlePomodoroComplete();
-            }
-
-            if (onComplete) {
-              onComplete({
-                seconds: newSeconds,
-                tag,
-                mode,
-                pomodoroState
-              });
-            }
-          }
-
-          return newSeconds;
-        });
+        setSeconds(prev => prev + 1);
       }, 1000);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
     }
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [isRunning, targetSeconds, mode, onComplete, tag, pomodoroState]);
+  }, [isRunning]);
 
-  const handlePomodoroComplete = useCallback(() => {
-    const { session, isBreak, isLongBreak } = pomodoroState;
-    const presets = TIMER_PRESETS.pomodoro;
+  // Handle target reached (separate effect for pomodoro countdown)
+  useEffect(() => {
+    if (mode === 'pomodoro' && targetSeconds && seconds >= targetSeconds) {
+      setIsRunning(false);
 
-    if (isBreak || isLongBreak) {
-      // Break is over, start next work session
-      setPomodoroState({
-        session: isLongBreak ? 1 : session,
-        isBreak: false,
-        isLongBreak: false
-      });
-      setTargetSeconds(presets.work * 60);
-    } else {
-      // Work session is over
-      if (session >= presets.sessionsBeforeLongBreak) {
-        // Time for long break
-        setPomodoroState({
-          session: session,
+      const presets = TIMER_PRESETS.pomodoro;
+
+      if (pomodoroState.isBreak || pomodoroState.isLongBreak) {
+        // Break is over, start next work session
+        setPomodoroState(prev => ({
+          session: prev.isLongBreak ? 1 : prev.session,
           isBreak: false,
-          isLongBreak: true
-        });
-        setTargetSeconds(presets.longBreak * 60);
-      } else {
-        // Short break
-        setPomodoroState({
-          session: session + 1,
-          isBreak: true,
           isLongBreak: false
+        }));
+        setTargetSeconds(presets.work * 60);
+      } else {
+        // Work session is over
+        if (pomodoroState.session >= presets.sessionsBeforeLongBreak) {
+          setPomodoroState(prev => ({
+            ...prev,
+            isBreak: false,
+            isLongBreak: true
+          }));
+          setTargetSeconds(presets.longBreak * 60);
+        } else {
+          setPomodoroState(prev => ({
+            session: prev.session + 1,
+            isBreak: true,
+            isLongBreak: false
+          }));
+          setTargetSeconds(presets.shortBreak * 60);
+        }
+      }
+
+      setSeconds(0);
+
+      if (onCompleteRef.current) {
+        onCompleteRef.current({
+          seconds,
+          minutes: Math.round(seconds / 60),
+          tag,
+          mode,
+          pomodoroState
         });
-        setTargetSeconds(presets.shortBreak * 60);
       }
     }
-
-    setSeconds(0);
-  }, [pomodoroState]);
+  }, [seconds, targetSeconds, mode, pomodoroState, tag]);
 
   const start = useCallback(() => {
     startTimeRef.current = new Date();
@@ -143,12 +127,14 @@ export function useTimer(onComplete = null) {
   }, [mode]);
 
   const setSimpleMode = useCallback(() => {
+    setIsRunning(false);
     setMode('simple');
     setTargetSeconds(null);
-    reset();
-  }, [reset]);
+    setSeconds(0);
+  }, []);
 
   const setPomodoroMode = useCallback(() => {
+    setIsRunning(false);
     setMode('pomodoro');
     setPomodoroState({
       session: 1,

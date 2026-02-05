@@ -39,13 +39,13 @@ export function MoodSelector({ value, onChange, size = 'md' }) {
 
 export function MoodEmoji({ mood, size = 'md', className = '' }) {
   const sizeClasses = {
-    xs: 'w-6 h-6 text-lg',
-    sm: 'w-8 h-8 text-2xl',
-    md: 'w-10 h-10 text-3xl',
-    lg: 'w-16 h-16 text-5xl',
+    xs: 'w-6 h-6',
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-16 h-16',
   };
 
-  // Fallback emoji mapping
+  // Fallback emoji mapping (used if image fails to load)
   const emojiMap = {
     'crying-face': '😢',
     'worried-face': '😟',
@@ -54,9 +54,23 @@ export function MoodEmoji({ mood, size = 'md', className = '' }) {
     'star-struck': '🤩',
   };
 
+  const handleImageError = (e) => {
+    // If image fails to load, show text emoji
+    e.target.style.display = 'none';
+    e.target.nextSibling.style.display = 'flex';
+  };
+
   return (
     <span className={`${sizeClasses[size]} flex items-center justify-center ${className}`}>
-      {emojiMap[mood.name] || '😐'}
+      <img
+        src={mood.file}
+        alt={mood.label}
+        className="w-full h-full object-contain"
+        onError={handleImageError}
+      />
+      <span className="hidden items-center justify-center text-3xl">
+        {emojiMap[mood.name] || '😐'}
+      </span>
     </span>
   );
 }
