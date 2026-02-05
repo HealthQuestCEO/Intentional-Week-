@@ -150,14 +150,22 @@ export function useWeekData(weekDate = new Date()) {
     return save(newData);
   }, [weekData, save]);
 
-  // Timer log helper
+  // Timer log helpers
   const addTimerLog = useCallback((log) => {
     if (!weekData) return false;
     const newData = deepClone(weekData);
     newData.timerLogs.push({
       ...log,
+      id: Date.now().toString(),
       timestamp: new Date().toISOString()
     });
+    return save(newData);
+  }, [weekData, save]);
+
+  const removeTimerLog = useCallback((logId) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    newData.timerLogs = newData.timerLogs.filter(log => log.id !== logId);
     return save(newData);
   }, [weekData, save]);
 
@@ -197,6 +205,7 @@ export function useWeekData(weekDate = new Date()) {
     removeTask,
     // Timer
     addTimerLog,
+    removeTimerLog,
     // Status
     getTodayStatus
   };

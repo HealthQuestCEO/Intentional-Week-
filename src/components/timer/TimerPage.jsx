@@ -1,10 +1,11 @@
+import { Trash2 } from 'lucide-react';
 import { Layout } from '../layout/Layout';
 import { Timer } from './Timer';
 import { useWeekData } from '../../hooks/useWeekData';
 import { formatMinutes } from '../../utils/dateUtils';
 
 export function TimerPage() {
-  const { weekData } = useWeekData();
+  const { weekData, removeTimerLog } = useWeekData();
   const timerLogs = weekData?.timerLogs || [];
 
   // Calculate summary stats
@@ -79,16 +80,25 @@ export function TimerPage() {
             <div className="space-y-2">
               {timerLogs.slice(-5).reverse().map((log, i) => (
                 <div
-                  key={i}
-                  className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0"
+                  key={log.id || i}
+                  className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0 group"
                 >
                   <div>
                     <p className="text-sm text-charcoal">{log.activity}</p>
                     <p className="text-xs text-charcoal/50">{log.date}</p>
                   </div>
-                  <span className="text-sm font-medium text-balanced-teal">
-                    {formatMinutes(log.minutes)}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-balanced-teal">
+                      {formatMinutes(log.minutes)}
+                    </span>
+                    <button
+                      onClick={() => removeTimerLog(log.id)}
+                      className="text-charcoal/30 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -1,17 +1,14 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2, Play, Pause, Check, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Check } from 'lucide-react';
 import { useWeekData } from '../../hooks/useWeekData';
-import { Input, TextArea, Select } from '../common/Input';
+import { Input, TextArea } from '../common/Input';
 import { Button } from '../common/Button';
-import { formatMinutes } from '../../utils/dateUtils';
 import { TASK_STATUS } from '../../utils/constants';
 
 export function FridayPlanCard({ currentDate }) {
   const { weekData, updateFridayPlan, markFridayPlanDone, addTask, updateTask, removeTask } = useWeekData(currentDate);
   const [expandedSection, setExpandedSection] = useState('career');
   const [newTaskName, setNewTaskName] = useState('');
-  const [newTaskHours, setNewTaskHours] = useState('');
-  const [newTaskMinutes, setNewTaskMinutes] = useState('');
 
   const fridayPlan = weekData?.fridayPlan || {
     done: false,
@@ -22,33 +19,20 @@ export function FridayPlanCard({ currentDate }) {
 
   const handleAddTask = () => {
     if (newTaskName.trim()) {
-      const hours = parseInt(newTaskHours) || 0;
-      const minutes = parseInt(newTaskMinutes) || 0;
-      const totalMinutes = hours * 60 + minutes;
-
       addTask({
         name: newTaskName.trim(),
-        plannedMinutes: totalMinutes
+        plannedMinutes: 0
       });
-
       setNewTaskName('');
-      setNewTaskHours('');
-      setNewTaskMinutes('');
     }
   };
 
-  const handleStatusChange = (taskId, status) => {
-    updateTask(taskId, { status });
-  };
-
-  const handleActualTimeChange = (taskId, value) => {
-    const minutes = parseInt(value) || 0;
-    updateTask(taskId, { actualMinutes: minutes });
+  const handleToggleTask = (taskId, currentStatus) => {
+    const newStatus = currentStatus === TASK_STATUS.DONE ? TASK_STATUS.NOT_STARTED : TASK_STATUS.DONE;
+    updateTask(taskId, { status: newStatus });
   };
 
   const tasks = fridayPlan.career?.tasks || [];
-  const totalPlanned = tasks.reduce((sum, t) => sum + (t.plannedMinutes || 0), 0);
-  const totalActual = tasks.reduce((sum, t) => sum + (t.actualMinutes || 0), 0);
   const completedTasks = tasks.filter(t => t.status === TASK_STATUS.DONE).length;
 
   const sections = [
@@ -103,16 +87,9 @@ export function FridayPlanCard({ currentDate }) {
                   onNotesChange={(notes) => updateFridayPlan('career', { notes })}
                   newTaskName={newTaskName}
                   setNewTaskName={setNewTaskName}
-                  newTaskHours={newTaskHours}
-                  setNewTaskHours={setNewTaskHours}
-                  newTaskMinutes={newTaskMinutes}
-                  setNewTaskMinutes={setNewTaskMinutes}
                   onAddTask={handleAddTask}
-                  onStatusChange={handleStatusChange}
-                  onActualTimeChange={handleActualTimeChange}
+                  onToggleTask={handleToggleTask}
                   onRemoveTask={removeTask}
-                  totalPlanned={totalPlanned}
-                  totalActual={totalActual}
                   completedTasks={completedTasks}
                 />
               ) : (
@@ -140,23 +117,16 @@ function CareerSection({
   onNotesChange,
   newTaskName,
   setNewTaskName,
-  newTaskHours,
-  setNewTaskHours,
-  newTaskMinutes,
-  setNewTaskMinutes,
   onAddTask,
-  onStatusChange,
-  onActualTimeChange,
+  onToggleTask,
   onRemoveTask,
-  totalPlanned,
-  totalActual,
   completedTasks
 }) {
-  const statusOptions = [
-    { value: TASK_STATUS.NOT_STARTED, label: 'Not started' },
-    { value: TASK_STATUS.IN_PROGRESS, label: 'In progress' },
-    { value: TASK_STATUS.DONE, label: 'Done' }
-  ];
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      onAddTask();
+    }
+  };
 
   return (
     <div className="space-y-4 mt-3">
@@ -169,115 +139,58 @@ function CareerSection({
       />
 
       {/* Add task form */}
-      <div className="bg-gray-50 rounded-lg p-3">
-        <p className="text-sm font-medium text-charcoal mb-2">Add Task</p>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Input
-            placeholder="Task name"
-            value={newTaskName}
-            onChange={(e) => setNewTaskName(e.target.value)}
-            className="flex-1"
-          />
-          <div className="flex gap-2 items-center">
-            <Input
-              type="number"
-              placeholder="h"
-              value={newTaskHours}
-              onChange={(e) => setNewTaskHours(e.target.value)}
-              className="w-16"
-              min="0"
-            />
-            <span className="text-charcoal/40">:</span>
-            <Input
-              type="number"
-              placeholder="m"
-              value={newTaskMinutes}
-              onChange={(e) => setNewTaskMinutes(e.target.value)}
-              className="w-16"
-              min="0"
-              max="59"
-            />
-            <Button onClick={onAddTask} size="sm" icon={Plus}>
-              Add
-            </Button>
-          </div>
-        </div>
+      <div className="flex gap-2">
+        <Input
+          placeholder="Add a task..."
+          value={newTaskName}
+          onChange={(e) => setNewTaskName(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="flex-1"
+        />
+        <Button onClick={onAddTask} size="sm" icon={Plus}>
+          Add
+        </Button>
       </div>
 
-      {/* Task list */}
+      {/* Task list - simple bullets */}
       {tasks.length > 0 && (
-        <div className="space-y-2">
-          <div className="grid grid-cols-12 gap-2 text-xs text-charcoal/50 font-medium px-2">
-            <div className="col-span-5">Task</div>
-            <div className="col-span-2 text-center">Planned</div>
-            <div className="col-span-2 text-center">Actual</div>
-            <div className="col-span-3 text-center">Status</div>
-          </div>
-
+        <ul className="space-y-2">
           {tasks.map((task) => (
-            <div
+            <li
               key={task.id}
-              className={`
-                grid grid-cols-12 gap-2 items-center p-2 rounded-lg
-                ${task.status === TASK_STATUS.DONE ? 'bg-green-50' : 'bg-gray-50'}
-              `}
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 group"
             >
-              <div className="col-span-5 flex items-center gap-2">
-                <button
-                  onClick={() => onRemoveTask(task.id)}
-                  className="text-charcoal/30 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-                <span className={`text-sm ${task.status === TASK_STATUS.DONE ? 'line-through text-charcoal/50' : 'text-charcoal'}`}>
-                  {task.name}
-                </span>
-              </div>
-              <div className="col-span-2 text-center text-sm text-charcoal/60">
-                {formatMinutes(task.plannedMinutes)}
-              </div>
-              <div className="col-span-2">
-                <input
-                  type="number"
-                  value={task.actualMinutes || ''}
-                  onChange={(e) => onActualTimeChange(task.id, e.target.value)}
-                  placeholder="min"
-                  className="w-full text-center text-sm p-1 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-balanced-teal"
-                  min="0"
-                />
-              </div>
-              <div className="col-span-3">
-                <select
-                  value={task.status}
-                  onChange={(e) => onStatusChange(task.id, e.target.value)}
-                  className="w-full text-xs p-1 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-balanced-teal"
-                >
-                  {statusOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+              <button
+                onClick={() => onToggleTask(task.id, task.status)}
+                className={`
+                  w-5 h-5 rounded border-2 flex items-center justify-center transition-colors
+                  ${task.status === TASK_STATUS.DONE
+                    ? 'bg-balanced-teal border-balanced-teal text-white'
+                    : 'border-gray-300 hover:border-balanced-teal'
+                  }
+                `}
+              >
+                {task.status === TASK_STATUS.DONE && <Check className="w-3 h-3" />}
+              </button>
+              <span className={`flex-1 text-sm ${task.status === TASK_STATUS.DONE ? 'line-through text-charcoal/50' : 'text-charcoal'}`}>
+                {task.name}
+              </span>
+              <button
+                onClick={() => onRemoveTask(task.id)}
+                className="text-charcoal/30 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {/* Summary */}
       {tasks.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 text-center pt-3 border-t border-gray-100">
-          <div>
-            <p className="text-lg font-semibold text-charcoal">{formatMinutes(totalPlanned)}</p>
-            <p className="text-xs text-charcoal/50">Planned</p>
-          </div>
-          <div>
-            <p className="text-lg font-semibold text-charcoal">{formatMinutes(totalActual)}</p>
-            <p className="text-xs text-charcoal/50">Actual</p>
-          </div>
-          <div>
-            <p className="text-lg font-semibold text-charcoal">{completedTasks}/{tasks.length}</p>
-            <p className="text-xs text-charcoal/50">Done</p>
-          </div>
-        </div>
+        <p className="text-sm text-charcoal/50 text-center pt-2 border-t border-gray-100">
+          {completedTasks} of {tasks.length} tasks done
+        </p>
       )}
     </div>
   );
