@@ -5,7 +5,7 @@ export function Downloadables() {
     {
       name: 'Intentional Week Printable',
       description: 'A printable PDF version of the weekly planner',
-      file: '/downloads/intentional-week-printable.pdf',
+      file: '/downloads/Intentional_Week_Printable.pdf',
       icon: FileText,
     },
   ];
@@ -60,9 +60,6 @@ export function Downloadables() {
           </div>
         ))}
       </div>
-      <p className="text-xs text-charcoal/40 mt-3 text-center">
-        Upload your PDF to /public/downloads/intentional-week-printable.pdf
-      </p>
     </div>
   );
 }
