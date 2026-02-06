@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { LogOut, Bell, User, Info, Download, Trash2 } from 'lucide-react';
+import { LogOut, Bell, User, Info, Download, Trash2, Smartphone } from 'lucide-react';
 import { Layout } from '../layout/Layout';
 import { useAuth } from '../../hooks/useAuth';
 import { useSettings } from '../../hooks/useStorage';
 import { useNotifications } from '../../hooks/useNotifications';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { ReminderSettings } from './ReminderSettings';
@@ -13,6 +14,7 @@ export function Settings() {
   const { user, logout } = useAuth();
   const { settings, update } = useSettings();
   const { isGranted, requestPermission, notify } = useNotifications();
+  const { canInstall, isInstalled, promptInstall } = usePWAInstall();
   const [activeSection, setActiveSection] = useState('reminders');
 
   const handleLogout = async () => {
@@ -211,6 +213,41 @@ export function Settings() {
                 <h2 className="text-xl font-bold text-charcoal mb-1">Intentional Week</h2>
                 <p className="text-sm text-charcoal/60">Version 0.1.0</p>
               </div>
+            </Card>
+
+            {/* Install App */}
+            <Card>
+              <h3 className="font-medium text-charcoal mb-3">Install App</h3>
+              {isInstalled ? (
+                <div className="flex items-center gap-2 text-green-600">
+                  <Smartphone className="w-5 h-5" />
+                  <span className="text-sm">App is installed</span>
+                </div>
+              ) : canInstall ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-charcoal/60">
+                    Add Intentional Week to your home screen for quick access.
+                  </p>
+                  <Button
+                    onClick={promptInstall}
+                    icon={Smartphone}
+                    className="w-full justify-center"
+                  >
+                    Add to Home Screen
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-charcoal/60">
+                    To install this app on your device:
+                  </p>
+                  <ul className="text-sm text-charcoal/60 list-disc list-inside space-y-1">
+                    <li><strong>Chrome/Edge:</strong> Click the install icon in the address bar</li>
+                    <li><strong>Safari (iOS):</strong> Tap Share then "Add to Home Screen"</li>
+                    <li><strong>Firefox:</strong> Use the browser menu to install</li>
+                  </ul>
+                </div>
+              )}
             </Card>
 
             {/* Downloadables */}

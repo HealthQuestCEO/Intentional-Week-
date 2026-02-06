@@ -208,11 +208,11 @@ export function createEmptyWeek() {
       },
       relationships: {
         notes: '',
-        plans: []
+        tasks: []
       },
       self: {
         notes: '',
-        plans: []
+        tasks: []
       }
     },
     moveBy3pm: {},
@@ -292,6 +292,17 @@ export function getAllJournalEntries(userId) {
   const userData = getUserData(userId);
   if (!userData) return {};
   return userData.journal || {};
+}
+
+/**
+ * Delete journal entry
+ */
+export function deleteJournalEntry(userId, dateKey) {
+  const userData = getUserData(userId);
+  if (!userData || !userData.journal) return false;
+
+  delete userData.journal[dateKey];
+  return saveUserData(userId, userData);
 }
 
 // ============================================
