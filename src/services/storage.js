@@ -239,7 +239,8 @@ export function createEmptyWeek() {
       activity: '',
       days: {}
     },
-    timerLogs: []
+    timerLogs: [],
+    events: []
   };
 }
 

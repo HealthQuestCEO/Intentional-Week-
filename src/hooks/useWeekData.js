@@ -174,6 +174,38 @@ export function useWeekData(weekDate = new Date()) {
     return save(newData);
   }, [weekData, save]);
 
+  // Event helpers (for weekly planner)
+  const addEvent = useCallback((event) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    if (!newData.events) newData.events = [];
+    newData.events.push({
+      ...event,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    });
+    return save(newData);
+  }, [weekData, save]);
+
+  const updateEvent = useCallback((eventId, updates) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    if (!newData.events) newData.events = [];
+    const eventIndex = newData.events.findIndex(e => e.id === eventId);
+    if (eventIndex !== -1) {
+      newData.events[eventIndex] = { ...newData.events[eventIndex], ...updates };
+    }
+    return save(newData);
+  }, [weekData, save]);
+
+  const removeEvent = useCallback((eventId) => {
+    if (!weekData) return false;
+    const newData = deepClone(weekData);
+    if (!newData.events) newData.events = [];
+    newData.events = newData.events.filter(e => e.id !== eventId);
+    return save(newData);
+  }, [weekData, save]);
+
   // Check today's status for various rules
   const getTodayStatus = useCallback(() => {
     if (!weekData) return {};
@@ -211,6 +243,10 @@ export function useWeekData(weekDate = new Date()) {
     // Timer
     addTimerLog,
     removeTimerLog,
+    // Events
+    addEvent,
+    updateEvent,
+    removeEvent,
     // Status
     getTodayStatus
   };

@@ -7,6 +7,7 @@ import { CalendarView } from './components/calendar/CalendarView';
 import { TimerPage } from './components/timer/TimerPage';
 import { ExtrasPanel } from './components/extras/ExtrasPanel';
 import { Settings } from './components/settings/Settings';
+import { WeeklyPlanner } from './components/planner/WeeklyPlanner';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -94,6 +95,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/planner"
+        element={
+          <ProtectedRoute>
+            <WeeklyPlanner />
           </ProtectedRoute>
         }
       />
