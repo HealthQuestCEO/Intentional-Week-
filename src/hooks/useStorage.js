@@ -6,6 +6,7 @@ import {
   getJournalEntry,
   saveJournalEntry,
   getAllJournalEntries,
+  deleteJournalEntry,
   getSettings,
   updateSettings
 } from '../services/storage';
@@ -110,9 +111,15 @@ export function useJournal() {
     return results.sort((a, b) => b.date.localeCompare(a.date));
   }, [user]);
 
+  const deleteEntry = useCallback((dateKey) => {
+    if (!user) return false;
+    return deleteJournalEntry(user.uid, dateKey);
+  }, [user]);
+
   return {
     getEntry,
     saveEntry,
+    deleteEntry,
     getAllEntries,
     searchEntries
   };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, Edit2 } from 'lucide-react';
 import { useJournal } from '../../hooks/useStorage';
 import { MoodEmoji } from './MoodSelector';
 import { Modal } from '../common/Modal';
@@ -19,7 +19,8 @@ import { startOfMonth, getDay } from 'date-fns';
 export function MoodCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
-  const { getAllEntries, getEntry } = useJournal();
+  const [isEditing, setIsEditing] = useState(false);
+  const { getAllEntries, getEntry, deleteEntry } = useJournal();
 
   const entries = getAllEntries();
   const monthDays = getMonthDays(currentMonth);
@@ -118,18 +119,37 @@ export function MoodCalendar() {
       {/* Day detail modal */}
       <Modal
         isOpen={!!selectedDate}
-        onClose={() => setSelectedDate(null)}
+        onClose={() => {
+          setSelectedDate(null);
+          setIsEditing(false);
+        }}
         title={selectedDate ? formatDate(selectedDate, 'EEEE, MMMM d, yyyy') : ''}
         size="lg"
       >
         {selectedDate && (
-          selectedEntry ? (
-            <EntryView entry={selectedEntry} date={selectedDate} />
+          selectedEntry && !isEditing ? (
+            <EntryView
+              entry={selectedEntry}
+              date={selectedDate}
+              onEdit={() => setIsEditing(true)}
+              onDelete={() => {
+                if (confirm('Delete this journal entry?')) {
+                  deleteEntry(getDateKey(selectedDate));
+                  setSelectedDate(null);
+                }
+              }}
+            />
           ) : (
             <JournalEntry
               date={selectedDate}
-              onSave={() => setSelectedDate(null)}
-              onClose={() => setSelectedDate(null)}
+              onSave={() => {
+                setSelectedDate(null);
+                setIsEditing(false);
+              }}
+              onClose={() => {
+                setSelectedDate(null);
+                setIsEditing(false);
+              }}
             />
           )
         )}
@@ -138,7 +158,7 @@ export function MoodCalendar() {
   );
 }
 
-function EntryView({ entry, date }) {
+function EntryView({ entry, date, onEdit, onDelete }) {
   const mood = MOOD_EMOJIS[entry.mood?.value];
 
   return (
@@ -181,6 +201,24 @@ function EntryView({ entry, date }) {
       <p className="text-xs text-charcoal/40 text-center">
         Logged at {formatDate(entry.timestamp, 'h:mm a')}
       </p>
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-4 border-t border-gray-100">
+        <button
+          onClick={onEdit}
+          className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-charcoal/70 hover:text-balanced-teal transition-colors"
+        >
+          <Edit2 className="w-4 h-4" />
+          Edit
+        </button>
+        <button
+          onClick={onDelete}
+          className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-charcoal/70 hover:text-red-500 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete
+        </button>
+      </div>
     </div>
   );
 }

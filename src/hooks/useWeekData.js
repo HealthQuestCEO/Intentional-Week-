@@ -115,38 +115,40 @@ export function useWeekData(weekDate = new Date()) {
     return save(newData);
   }, [weekData, save]);
 
-  // Task helpers (for Friday Plan career section)
-  const addTask = useCallback((task) => {
+  // Task helpers (for Friday Plan - any section)
+  const addTask = useCallback((task, section = 'career') => {
     if (!weekData) return false;
     const newData = deepClone(weekData);
-    newData.fridayPlan.career.tasks.push({
+    if (!newData.fridayPlan[section].tasks) {
+      newData.fridayPlan[section].tasks = [];
+    }
+    newData.fridayPlan[section].tasks.push({
       id: Date.now().toString(),
       name: task.name,
-      plannedMinutes: task.plannedMinutes || 0,
-      actualMinutes: 0,
-      status: 'not-started',
-      timerLogs: []
+      status: 'not-started'
     });
     return save(newData);
   }, [weekData, save]);
 
-  const updateTask = useCallback((taskId, updates) => {
+  const updateTask = useCallback((taskId, updates, section = 'career') => {
     if (!weekData) return false;
     const newData = deepClone(weekData);
-    const taskIndex = newData.fridayPlan.career.tasks.findIndex(t => t.id === taskId);
+    if (!newData.fridayPlan[section].tasks) return false;
+    const taskIndex = newData.fridayPlan[section].tasks.findIndex(t => t.id === taskId);
     if (taskIndex !== -1) {
-      newData.fridayPlan.career.tasks[taskIndex] = {
-        ...newData.fridayPlan.career.tasks[taskIndex],
+      newData.fridayPlan[section].tasks[taskIndex] = {
+        ...newData.fridayPlan[section].tasks[taskIndex],
         ...updates
       };
     }
     return save(newData);
   }, [weekData, save]);
 
-  const removeTask = useCallback((taskId) => {
+  const removeTask = useCallback((taskId, section = 'career') => {
     if (!weekData) return false;
     const newData = deepClone(weekData);
-    newData.fridayPlan.career.tasks = newData.fridayPlan.career.tasks.filter(t => t.id !== taskId);
+    if (!newData.fridayPlan[section].tasks) return false;
+    newData.fridayPlan[section].tasks = newData.fridayPlan[section].tasks.filter(t => t.id !== taskId);
     return save(newData);
   }, [weekData, save]);
 

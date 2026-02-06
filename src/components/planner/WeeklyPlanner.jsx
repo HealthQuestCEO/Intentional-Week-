@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Plus, X, Clock, Trash2, Edit2, Check } from 'lucide-react';
+import { Plus, X, Clock, Trash2, Edit2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Layout } from '../layout/Layout';
 import { useWeekData } from '../../hooks/useWeekData';
-import { getWeekDays, formatDate, getDayName } from '../../utils/dateUtils';
+import { getWeekDays, formatDate, getDayName, getWeekStart } from '../../utils/dateUtils';
+import { addWeeks, subWeeks, isSameWeek } from 'date-fns';
 
 export function WeeklyPlanner() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -13,6 +14,7 @@ export function WeeklyPlanner() {
 
   const weekDays = getWeekDays(currentDate);
   const events = weekData?.events || [];
+  const isCurrentWeek = isSameWeek(currentDate, new Date(), { weekStartsOn: 1 });
 
   const getEventsForDay = (date) => {
     const dateStr = date.toISOString().split('T')[0];
@@ -43,19 +45,72 @@ export function WeeklyPlanner() {
     setShowAddModal(true);
   };
 
+  const goToPreviousWeek = () => {
+    setCurrentDate(prev => subWeeks(prev, 1));
+  };
+
+  const goToNextWeek = () => {
+    setCurrentDate(prev => addWeeks(prev, 1));
+  };
+
+  const goToCurrentWeek = () => {
+    setCurrentDate(new Date());
+  };
+
+  // Format week range for header
+  const weekStart = weekDays[0];
+  const weekEnd = weekDays[6];
+  const weekRangeText = `${formatDate(weekStart, 'MMM d')} - ${formatDate(weekEnd, 'MMM d, yyyy')}`;
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
+        {/* Header with week navigation */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-bold text-charcoal">Weekly Planner</h1>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToPreviousWeek}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Previous week"
+            >
+              <ChevronLeft className="w-5 h-5 text-charcoal" />
+            </button>
+
+            <button
+              onClick={goToCurrentWeek}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                isCurrentWeek
+                  ? 'bg-balanced-teal text-white'
+                  : 'bg-gray-100 text-charcoal hover:bg-gray-200'
+              }`}
+            >
+              Today
+            </button>
+
+            <button
+              onClick={goToNextWeek}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Next week"
+            >
+              <ChevronRight className="w-5 h-5 text-charcoal" />
+            </button>
+          </div>
+
           <button
-            onClick={() => openAddModal(new Date())}
+            onClick={() => openAddModal(weekDays[0])}
             className="flex items-center gap-2 px-4 py-2 bg-balanced-teal text-white rounded-lg hover:bg-balanced-teal/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Event
           </button>
         </div>
+
+        {/* Week range display */}
+        <p className="text-sm text-charcoal/60 mb-4 text-center sm:text-left">
+          {weekRangeText}
+        </p>
 
         {/* Week Grid */}
         <div className="grid grid-cols-1 md:grid-cols-7 gap-3">

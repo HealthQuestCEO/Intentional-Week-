@@ -1,44 +1,47 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2, Check } from 'lucide-react';
 import { useWeekData } from '../../hooks/useWeekData';
-import { Input, TextArea } from '../common/Input';
+import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { TASK_STATUS } from '../../utils/constants';
 
 export function FridayPlanCard({ currentDate }) {
-  const { weekData, updateFridayPlan, markFridayPlanDone, addTask, updateTask, removeTask } = useWeekData(currentDate);
+  const { weekData, markFridayPlanDone, addTask, updateTask, removeTask } = useWeekData(currentDate);
   const [expandedSection, setExpandedSection] = useState('career');
-  const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskInputs, setNewTaskInputs] = useState({
+    career: '',
+    relationships: '',
+    self: ''
+  });
 
   const fridayPlan = weekData?.fridayPlan || {
     done: false,
     career: { notes: '', tasks: [] },
-    relationships: { notes: '', plans: [] },
-    self: { notes: '', plans: [] }
+    relationships: { notes: '', tasks: [] },
+    self: { notes: '', tasks: [] }
   };
 
-  const handleAddTask = () => {
-    if (newTaskName.trim()) {
-      addTask({
-        name: newTaskName.trim(),
-        plannedMinutes: 0
-      });
-      setNewTaskName('');
+  const handleAddTask = (section) => {
+    const taskName = newTaskInputs[section]?.trim();
+    if (taskName) {
+      addTask({ name: taskName }, section);
+      setNewTaskInputs(prev => ({ ...prev, [section]: '' }));
     }
   };
 
-  const handleToggleTask = (taskId, currentStatus) => {
+  const handleToggleTask = (taskId, currentStatus, section) => {
     const newStatus = currentStatus === TASK_STATUS.DONE ? TASK_STATUS.NOT_STARTED : TASK_STATUS.DONE;
-    updateTask(taskId, { status: newStatus });
+    updateTask(taskId, { status: newStatus }, section);
   };
 
-  const tasks = fridayPlan.career?.tasks || [];
-  const completedTasks = tasks.filter(t => t.status === TASK_STATUS.DONE).length;
+  const handleRemoveTask = (taskId, section) => {
+    removeTask(taskId, section);
+  };
 
   const sections = [
-    { id: 'career', label: 'Career / Work', icon: '💼', color: 'bg-balanced-teal' },
-    { id: 'relationships', label: 'Relationships', icon: '💜', color: 'bg-teasel-lilac' },
-    { id: 'self', label: 'Self', icon: '🌱', color: 'bg-gelato-mint' }
+    { id: 'career', label: 'Career / Work', icon: '💼', placeholder: 'Add a work task...' },
+    { id: 'relationships', label: 'Relationships', icon: '💜', placeholder: 'Add a relationship goal...' },
+    { id: 'self', label: 'Self', icon: '🌱', placeholder: 'Add a personal goal...' }
   ];
 
   return (
@@ -61,66 +64,62 @@ export function FridayPlanCard({ currentDate }) {
       </div>
 
       {/* Collapsible sections */}
-      {sections.map((section) => (
-        <div key={section.id} className="border border-gray-100 rounded-lg overflow-hidden">
-          <button
-            onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
-            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <span>{section.icon}</span>
-              <span className="font-medium text-charcoal">{section.label}</span>
-            </div>
-            {expandedSection === section.id ? (
-              <ChevronUp className="w-4 h-4 text-charcoal/40" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-charcoal/40" />
-            )}
-          </button>
+      {sections.map((section) => {
+        const tasks = fridayPlan[section.id]?.tasks || [];
+        const completedTasks = tasks.filter(t => t.status === TASK_STATUS.DONE).length;
 
-          {expandedSection === section.id && (
-            <div className="p-3 pt-0 border-t border-gray-100 animate-expand">
-              {section.id === 'career' ? (
-                <CareerSection
-                  tasks={tasks}
-                  notes={fridayPlan.career?.notes || ''}
-                  onNotesChange={(notes) => updateFridayPlan('career', { notes })}
-                  newTaskName={newTaskName}
-                  setNewTaskName={setNewTaskName}
-                  onAddTask={handleAddTask}
-                  onToggleTask={handleToggleTask}
-                  onRemoveTask={removeTask}
-                  completedTasks={completedTasks}
-                />
+        return (
+          <div key={section.id} className="border border-gray-100 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span>{section.icon}</span>
+                <span className="font-medium text-charcoal">{section.label}</span>
+                {tasks.length > 0 && (
+                  <span className="text-xs text-charcoal/50">
+                    ({completedTasks}/{tasks.length})
+                  </span>
+                )}
+              </div>
+              {expandedSection === section.id ? (
+                <ChevronUp className="w-4 h-4 text-charcoal/40" />
               ) : (
-                <SimpleSection
-                  notes={fridayPlan[section.id]?.notes || ''}
-                  onNotesChange={(notes) => updateFridayPlan(section.id, { notes })}
-                  placeholder={
-                    section.id === 'relationships'
-                      ? 'Who will you connect with? What relationships need attention?'
-                      : 'What personal priorities matter this week?'
-                  }
-                />
+                <ChevronDown className="w-4 h-4 text-charcoal/40" />
               )}
-            </div>
-          )}
-        </div>
-      ))}
+            </button>
+
+            {expandedSection === section.id && (
+              <div className="p-3 pt-0 border-t border-gray-100 animate-expand">
+                <TaskList
+                  tasks={tasks}
+                  sectionId={section.id}
+                  placeholder={section.placeholder}
+                  newTaskValue={newTaskInputs[section.id] || ''}
+                  onNewTaskChange={(value) => setNewTaskInputs(prev => ({ ...prev, [section.id]: value }))}
+                  onAddTask={() => handleAddTask(section.id)}
+                  onToggleTask={(taskId, status) => handleToggleTask(taskId, status, section.id)}
+                  onRemoveTask={(taskId) => handleRemoveTask(taskId, section.id)}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function CareerSection({
+function TaskList({
   tasks,
-  notes,
-  onNotesChange,
-  newTaskName,
-  setNewTaskName,
+  sectionId,
+  placeholder,
+  newTaskValue,
+  onNewTaskChange,
   onAddTask,
   onToggleTask,
-  onRemoveTask,
-  completedTasks
+  onRemoveTask
 }) {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -129,21 +128,13 @@ function CareerSection({
   };
 
   return (
-    <div className="space-y-4 mt-3">
-      {/* Notes */}
-      <TextArea
-        placeholder="Top work priorities for the week..."
-        value={notes}
-        onChange={(e) => onNotesChange(e.target.value)}
-        rows={2}
-      />
-
+    <div className="space-y-3 mt-3">
       {/* Add task form */}
       <div className="flex gap-2">
         <Input
-          placeholder="Add a task..."
-          value={newTaskName}
-          onChange={(e) => setNewTaskName(e.target.value)}
+          placeholder={placeholder}
+          value={newTaskValue}
+          onChange={(e) => onNewTaskChange(e.target.value)}
           onKeyPress={handleKeyPress}
           className="flex-1"
         />
@@ -152,7 +143,7 @@ function CareerSection({
         </Button>
       </div>
 
-      {/* Task list - simple bullets */}
+      {/* Task list */}
       {tasks.length > 0 && (
         <ul className="space-y-2">
           {tasks.map((task) => (
@@ -163,7 +154,7 @@ function CareerSection({
               <button
                 onClick={() => onToggleTask(task.id, task.status)}
                 className={`
-                  w-5 h-5 rounded border-2 flex items-center justify-center transition-colors
+                  w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0
                   ${task.status === TASK_STATUS.DONE
                     ? 'bg-balanced-teal border-balanced-teal text-white'
                     : 'border-gray-300 hover:border-balanced-teal'
@@ -177,7 +168,7 @@ function CareerSection({
               </span>
               <button
                 onClick={() => onRemoveTask(task.id)}
-                className="text-charcoal/30 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                className="text-charcoal/30 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -186,25 +177,11 @@ function CareerSection({
         </ul>
       )}
 
-      {/* Summary */}
-      {tasks.length > 0 && (
-        <p className="text-sm text-charcoal/50 text-center pt-2 border-t border-gray-100">
-          {completedTasks} of {tasks.length} tasks done
+      {tasks.length === 0 && (
+        <p className="text-sm text-charcoal/40 text-center py-2">
+          No tasks yet
         </p>
       )}
-    </div>
-  );
-}
-
-function SimpleSection({ notes, onNotesChange, placeholder }) {
-  return (
-    <div className="mt-3">
-      <TextArea
-        placeholder={placeholder}
-        value={notes}
-        onChange={(e) => onNotesChange(e.target.value)}
-        rows={3}
-      />
     </div>
   );
 }
