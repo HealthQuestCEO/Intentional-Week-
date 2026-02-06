@@ -21,6 +21,12 @@ export function FridayPlanCard({ currentDate }) {
     self: { notes: '', tasks: [] }
   };
 
+  // Backward compatibility: use 'plans' if 'tasks' doesn't exist
+  const getTasksForSection = (sectionId) => {
+    const section = fridayPlan[sectionId];
+    return section?.tasks || section?.plans || [];
+  };
+
   const handleAddTask = (section) => {
     const taskName = newTaskInputs[section]?.trim();
     if (taskName) {
@@ -65,7 +71,7 @@ export function FridayPlanCard({ currentDate }) {
 
       {/* Collapsible sections */}
       {sections.map((section) => {
-        const tasks = fridayPlan[section.id]?.tasks || [];
+        const tasks = getTasksForSection(section.id);
         const completedTasks = tasks.filter(t => t.status === TASK_STATUS.DONE).length;
 
         return (
