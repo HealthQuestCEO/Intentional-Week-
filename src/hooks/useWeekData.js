@@ -119,8 +119,10 @@ export function useWeekData(weekDate = new Date()) {
   const addTask = useCallback((task, section = 'career') => {
     if (!weekData) return false;
     const newData = deepClone(weekData);
+    // Migrate old 'plans' to 'tasks' if needed
     if (!newData.fridayPlan[section].tasks) {
-      newData.fridayPlan[section].tasks = [];
+      newData.fridayPlan[section].tasks = newData.fridayPlan[section].plans || [];
+      delete newData.fridayPlan[section].plans;
     }
     newData.fridayPlan[section].tasks.push({
       id: Date.now().toString(),
@@ -133,7 +135,11 @@ export function useWeekData(weekDate = new Date()) {
   const updateTask = useCallback((taskId, updates, section = 'career') => {
     if (!weekData) return false;
     const newData = deepClone(weekData);
-    if (!newData.fridayPlan[section].tasks) return false;
+    // Migrate old 'plans' to 'tasks' if needed
+    if (!newData.fridayPlan[section].tasks) {
+      newData.fridayPlan[section].tasks = newData.fridayPlan[section].plans || [];
+      delete newData.fridayPlan[section].plans;
+    }
     const taskIndex = newData.fridayPlan[section].tasks.findIndex(t => t.id === taskId);
     if (taskIndex !== -1) {
       newData.fridayPlan[section].tasks[taskIndex] = {
@@ -147,7 +153,11 @@ export function useWeekData(weekDate = new Date()) {
   const removeTask = useCallback((taskId, section = 'career') => {
     if (!weekData) return false;
     const newData = deepClone(weekData);
-    if (!newData.fridayPlan[section].tasks) return false;
+    // Migrate old 'plans' to 'tasks' if needed
+    if (!newData.fridayPlan[section].tasks) {
+      newData.fridayPlan[section].tasks = newData.fridayPlan[section].plans || [];
+      delete newData.fridayPlan[section].plans;
+    }
     newData.fridayPlan[section].tasks = newData.fridayPlan[section].tasks.filter(t => t.id !== taskId);
     return save(newData);
   }, [weekData, save]);
